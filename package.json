@@ -1,6 +1,6 @@
 {
   "name": "sendback",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A simple utility for formatting HTTP responses in an Express/Node application",
   "main": "index.js",
   "scripts": {

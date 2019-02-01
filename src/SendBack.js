@@ -1,79 +1,41 @@
 import { AJAX_RESPONSE, AJAX_STATUS, AJAX_LABEL } from './AjaxResponseTypes';
 
 export default class SendBack {
-	#logger;
-	#silentMode;
 	constructor(config = {}){
-		this.#logger = config.hasOwnProperty('logger') ? config.logger : console;
-		this.#silentMode = config.hasOwnProperty('silentMode') ? config.silentMode : false;
+
 	}
 
 	config = (config) => {
 		const setConfig = (key) => {
 			if (config.hasOwnProperty(key)) this[`#${key}`] = config[key];
 		};
-		setConfig('logger');
-		setConfig('silentMode');
+		console.warn('config is not currently available');
 	}
 
-	success = (res, data = {}) => {
-		// Everything is good to go.
-		if (res.headersSent === false){
-			const response = formatResponseMessage(data);
-			res.status(AJAX_STATUS.SUCCESS).send(response);
-		}
-	};
+	// Everything is good to go.
+	success = (res, data = {}) => sendResponse('SUCCESS', res, data);
 
-	unauthorized = (res, err, message, data = {}) => {
-		// e.g. not logged in or invalid JWT.
-		if (err) this.logger.error(err);
-		if (res.headersSent === false){
-			const response = formatResponseMessage(data, null, AJAX_RESPONSE.UNAUTHORIZED, message);
-			res.status(AJAX_STATUS.UNAUTHORIZED).send(response);
-		}
-	};
+	// e.g. not logged in or invalid JWT.
+	unauthorized = (res, errorMessage) => sendResponse('UNAUTHORIZED', res, errorMessage);
 
-	methodNotAllowed = (res, err, message, data = {}) => {
-		// e.g. trying to PUT to a download endpoint.
-		if (err) this.logger.error(err);
-		if (res.headersSent === false){
-			const response = formatResponseMessage(data, null, AJAX_RESPONSE.METHOD_NOT_ALLOWED, message);
-			res.status(AJAX_STATUS.METHOD_NOT_ALLOWED).send(response);
-		}
-	};
+	// e.g. trying to PUT to a download endpoint.
+	methodNotAllowed = (res, errorMessage) => sendResponse('METHOD_NOT_ALLOWED', res, errorMessage);
 
-	invalidContent = (res, err, message, data = {}) => {
-		// Invalid body content... missing fields etc.
-		if (err) this.logger.error(err);
-		if (res.headersSent === false){
-			const response = formatResponseMessage(data, AJAX_RESPONSE.INVALID_CONTENT, message);
-			res.status(AJAX_STATUS.INVALID_CONTENT).send(response);
-		}
-	};
+	// Invalid body content... missing fields etc.
+	invalidContent = (res, errorMessage) => sendResponse('INVALID_CONTENT', res, errorMessage);
 
-	unavailable = (res, err, message, data = {}) => {
-		// something timed out or isn't working like maybe AWS or RDS.
-		if (err) this.logger.error(err);
-		if (res.headersSent === false){
-			const response = formatResponseMessage(data, null, AJAX_RESPONSE.UNAVAILABLE, message);
-			res.status(AJAX_STATUS.UNAVAILABLE).send(response);
-		}
-	};
+	// something timed out or isn't working.
+	unavailable = (res, errorMessage) => sendResponse('UNAVAILABLE', res, errorMessage);
 
-	serverError = (res, err, message, data = {}) => {
-		// catch-all for server errors.
-		if (err) this.logger.error(err);
-		if (res.headersSent === false){
-			const response = formatResponseMessage(data, null, AJAX_RESPONSE.SERVER_ERROR, message)
-			res.status(AJAX_STATUS.SERVER_ERROR).send(response);
-		}
-	};
+	// catch-all for server errors.
+	serverError = (res, errorMessage) => sendResponse('SERVER_ERROR', res, errorMessage);
 }
 
-function formatResponseMessage(data, errorType, errorMessage){
-	const status = AJAX_STATUS.hasOwnProperty(errorType) ? AJAX_STATUS[errorType] : null;
-	const type   = AJAX_LABEL.hasOwnProperty(errorType) ? AJAX_LABEL[errorType] : null;
-	const message = errorMessage || null;
-	return { data, error: { type, status, message } };
+function sendResponse(responseType, res, data){
+	if (res.headersSent === false){
+		res.statusMessage = AJAX_RESPONSE[responseType];
+		res.status(AJAX_STATUS[responseType]);
+		res.send({ data });
+	}
 }
 
